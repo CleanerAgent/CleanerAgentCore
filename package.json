@@ -2,21 +2,24 @@
   "name": "cleaneragentcore",
   "version": "1.0.0",
   "description": "Cleaner Agent Core and Main Repository",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "type": "module",
+  "main": "dist/index.js",
+  "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CleanerAgent/CleanerAgentCore.git"
+    "url": "https://github.com/CleanerAgent/CleanerAgentCore.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "bugs": {
     "url": "https://github.com/CleanerAgent/CleanerAgentCore/issues"
   },
   "homepage": "https://github.com/CleanerAgent/CleanerAgentCore#readme",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "eslint .",
+    "test": "vitest"
+  },
   "dependencies": {
     "@octokit/app": "^16.1.2",
     "@octokit/rest": "^22.0.1",
