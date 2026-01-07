@@ -31,11 +31,17 @@ export async function handleWebhookRequest(
   }
 
   try {
+    // 🔴 AQUI É O FIX PRINCIPAL
+    const payload =
+      Buffer.isBuffer(req.body)
+        ? JSON.parse(req.body.toString("utf-8"))
+        : req.body;
+
     await webhooks.verifyAndReceive({
       id: String(delivery),
       name: String(event),
       signature: String(signature),
-      payload: req.body,
+      payload,
     });
 
     res.status(200).end("OK");
