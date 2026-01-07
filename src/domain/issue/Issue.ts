@@ -1,4 +1,3 @@
-// src/domain/issue/Issue.ts
 export interface Issue {
   id: number;
   number: number;
@@ -12,6 +11,8 @@ export interface Issue {
     login: string;
     id: number;
   };
+
+  labels: string[];
 
   createdAt: string;
   updatedAt: string;
