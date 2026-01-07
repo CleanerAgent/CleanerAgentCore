@@ -4,24 +4,34 @@ import process from "node:process";
 
 import { logger } from "../../observability";
 
-/**
- * HTTP server runtime
- */
 export interface HttpServerRuntime {
   app: Application;
   server?: http.Server;
 }
 
-/**
- * Create HTTP server
- */
 export function createHttpServer(
   webhookHandler: (req: Request, res: Response) => Promise<void>
 ): HttpServerRuntime {
   const app = express();
 
   // ─────────────────────────────────────────────
-  // Global middlewares
+  // GitHub Webhook endpoint (RAW BODY)
+  // ─────────────────────────────────────────────
+  app.post(
+    "/webhook",
+    express.raw({ type: "application/json" }),
+    async (req, res) => {
+      try {
+        await webhookHandler(req, res);
+      } catch (error) {
+        logger.error(error, "Unhandled webhook error");
+        res.status(500).end("Internal Server Error");
+      }
+    }
+  );
+
+  // ─────────────────────────────────────────────
+  // Global middlewares (AFTER webhook)
   // ─────────────────────────────────────────────
   app.use(express.json({ limit: "1mb" }));
   app.use(express.urlencoded({ extended: true }));
@@ -38,54 +48,5 @@ export function createHttpServer(
     });
   });
 
-  // ─────────────────────────────────────────────
-  // GitHub Webhook endpoint
-  // ─────────────────────────────────────────────
-  app.post("/webhook", async (req, res) => {
-    try {
-      await webhookHandler(req, res);
-    } catch (error) {
-      logger.error(error, "Unhandled webhook error");
-      res.status(500).end("Internal Server Error");
-    }
-  });
-
   return { app };
-}
-
-/**
- * Start HTTP server
- */
-export function startHttpServer(
-  runtime: HttpServerRuntime,
-  port: number
-) {
-  const server = http.createServer(runtime.app);
-
-  server.listen(port, () => {
-    logger.info(`HTTP server running on port ${port}`);
-  });
-
-  runtime.server = server;
-}
-
-/**
- * Graceful shutdown
- */
-export function setupGracefulShutdown(runtime: HttpServerRuntime) {
-  const shutdown = (signal: string) => {
-    logger.warn(`Received ${signal}, shutting down HTTP server`);
-
-    if (!runtime.server) {
-      process.exit(0);
-    }
-
-    runtime.server.close(() => {
-      logger.info("HTTP server closed");
-      process.exit(0);
-    });
-  };
-
-  process.on("SIGINT", shutdown);
-  process.on("SIGTERM", shutdown);
 }
