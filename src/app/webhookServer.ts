@@ -1,33 +1,22 @@
 import { Webhooks } from "@octokit/webhooks";
-import type { IncomingMessage, ServerResponse } from "node:http";
+import type { Request, Response } from "express";
 
 import { config } from "../config";
 import { logger } from "../observability/logger";
 import { registerAllHandlers } from "../handlers/registerHandlers";
 
-/**
- * GitHub Webhooks instance
- */
 const webhooks = new Webhooks({
   secret: config.WEBHOOK_SECRET,
 });
 
-/**
- * Register all event handlers
- */
 registerAllHandlers(webhooks);
 
-/**
- * Handle raw webhook HTTP requests
- * (framework-agnostic)
- */
 export async function handleWebhookRequest(
-  req: IncomingMessage,
-  res: ServerResponse
+  req: Request,
+  res: Response
 ): Promise<void> {
   if (req.method !== "POST") {
-    res.statusCode = 405;
-    res.end("Method Not Allowed");
+    res.status(405).end("Method Not Allowed");
     return;
   }
 
@@ -37,39 +26,25 @@ export async function handleWebhookRequest(
 
   if (!event || !delivery || !signature) {
     logger.warn("Invalid webhook headers");
-    res.statusCode = 400;
-    res.end("Invalid webhook request");
+    res.status(400).end("Invalid webhook request");
     return;
   }
 
-  let body = "";
+  try {
+    await webhooks.verifyAndReceive({
+      id: String(delivery),
+      name: String(event),
+      signature: String(signature),
+      payload: req.body,
+    });
 
-  req.on("data", (chunk) => {
-    body += chunk;
-  });
-
-  req.on("end", async () => {
-    try {
-      await webhooks.verifyAndReceive({
-        id: String(delivery),
-        name: String(event),
-        signature: String(signature),
-        payload: JSON.parse(body),
-      });
-
-      res.statusCode = 200;
-      res.end("OK");
-    } catch (error) {
-      logger.error(error, "Webhook handling failed");
-      res.statusCode = 400;
-      res.end("Webhook error");
-    }
-  });
+    res.status(200).end("OK");
+  } catch (error) {
+    logger.error(error, "Webhook handling failed");
+    res.status(400).end("Webhook error");
+  }
 }
 
-/**
- * Expose webhooks instance (tests / extensions)
- */
 export function getWebhooks() {
   return webhooks;
 }
