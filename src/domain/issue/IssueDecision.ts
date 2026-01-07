@@ -1,19 +1,16 @@
 export type IssueDecision =
   | {
       action: "ignore";
-      reason?: string;
-    }
-  | {
-      action: "comment";
-      comment: string;
-      reason?: string;
-    }
-  | {
-      action: "label";
-      labels: string[];
-      reason?: string;
     }
   | {
       action: "close";
       reason: string;
+    }
+  | {
+      action: "comment";
+      comment: string;
+    }
+  | {
+      action: "label";
+      labels: string[];
     };
