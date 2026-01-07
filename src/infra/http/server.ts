@@ -42,7 +42,12 @@ export function createHttpServer(
   // GitHub Webhook endpoint
   // ─────────────────────────────────────────────
   app.post("/webhook", async (req, res) => {
-    await webhookHandler(req, res);
+    try {
+      await webhookHandler(req, res);
+    } catch (error) {
+      logger.error(error, "Unhandled webhook error");
+      res.status(500).end("Internal Server Error");
+    }
   });
 
   return { app };
